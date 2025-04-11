@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nutrition Image Analyzer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 500px;
+      padding: 30px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(15px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      border: 2px dashed #aaa;
+      border-radius: 10px;
+      background: #fdfdfd;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4e9af1;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #1d7ce5;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 15px;
+      border-left: 5px solid #4e9af1;
+      text-align: left;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .result p {
+      margin: 10px 0;
+    }
+
+    .error {
+      color: red;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🥗 Nutrition Analyzer</h2>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button onclick="analyzeImage()">Analyze Image</button>
+    <div id="response" class="result"></div>
+  </div>
+
+  <script>
+    async function analyzeImage() {
+      const input = document.getElementById("imageInput");
+      const file = input.files[0];
+      const responseDiv = document.getElementById("response");
+      responseDiv.innerHTML = "";
+
+      if (!file) {
+        alert("Please select an image.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const res = await fetch("http://localhost:5000/analyze-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.analysis) {
+          let parsed;
+          try {
+            parsed = JSON.parse(data.analysis);
+          } catch (err) {
+            responseDiv.innerHTML = `<p class="error">⚠️ Failed to parse response.</p>`;
+            return;
+          }
+
+          responseDiv.innerHTML = `
+            <p><strong>⭐ Rating:</strong> ${parsed.rating} / 5</p>
+            <p><strong>📋 Reason:</strong> ${parsed.reason}</p>
+            <p><strong>💡 Advice:</strong> ${parsed.advice}</p>
+          `;
+        } else {
+          responseDiv.innerHTML = `<p class="error">⚠️ ${data.error || "Unknown error"}</p>`;
+        }
+      } catch (err) {
+        responseDiv.innerHTML = `<p class="error">❌ Request failed: ${err.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
